@@ -45,7 +45,7 @@ def handle(req):
         return {
             "protocolVersion": params.get("protocolVersion", "2025-06-18"),
             "capabilities": {"tools": {}},
-            "serverInfo": {"name": "my-law", "version": "0.1"},
+            "serverInfo": {"name": "law-axtax", "version": "0.1"},
         }
     if method == "ping":              # protocol-level liveness check (not our ping tool)
         return {}
