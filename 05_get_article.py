@@ -5,8 +5,8 @@
 #     제10조의2 -> 0010 + 02 = "001002"
 # The statute itself is addressed by MST, taken from search (04).
 #
-# This file also guards against two quirks of the API that are
-# documented nowhere — one in how the request is sent, one in
+# This file also guards against three quirks of the API that are
+# documented nowhere — one in how the request is sent, two in
 # how the response is read.
 # ---------------------------------------------------------------
 import json
@@ -124,6 +124,18 @@ def get_article(mst, jo):
                     t3 = text_of(mok.get("목내용"))
                     if t3:
                         out.append("      " + t3.replace("\n", "\n      "))
+            # Quirk (response side #2): in some statutes 목 hangs directly
+            # off 항 as a sibling of 호 — not under any 호. Measured live:
+            # 소득세법 제12조 has 45 such 목 and zero under its 호.
+            # Skip this and all of them vanish silently. The API gives no
+            # clue which 호 each one belongs to, so emit them after the
+            # 호 list — imperfect ordering beats losing the text.
+            for mok in as_list(hang.get("목")):
+                if not isinstance(mok, dict):
+                    continue
+                t3 = text_of(mok.get("목내용"))
+                if t3:
+                    out.append("      " + t3.replace("\n", "\n      "))
     return "\n".join(out)
 
 

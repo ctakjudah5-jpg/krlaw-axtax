@@ -1,10 +1,17 @@
 # 실습 규칙 (모든 작업에서 반드시 지킬 것)
 
 ## 만드는 것
-- 파일 두 개만: my_law_server.py (MCP 서버), setup_key.py (인증키 입력창)
+- 내가 시킨 파일만 C:\krlaw 안에 만든다. 이 실습에서 만드는 것은 다음뿐이다.
+    my_law_server.py   MCP 서버
+    setup_key.py       인증키 입력창
+    07_register.py     등록 프로그램 (저장소에서 받아 그대로 저장)
+    등록하기.bat        위 등록 프로그램을 더블클릭으로 실행하는 파일
   (이 규칙 파일과, 실행 중 생기는 law_oc.txt·owner.txt 는 예외)
-- 작업폴더 C:\krlaw 밖의 파일은 손대지 않는다. 단 하나 예외는 마지막 단계의
-  Claude 설정 파일이고, 그때도 백업을 먼저 만든다.
+- 작업폴더 C:\krlaw 밖의 파일은 손대지 않는다.
+- ★Claude 앱의 설정 파일(claude_desktop_config.json)은 절대 직접 고치지 않는다.
+  앱이 켜져 있으면 앱이 자기 설정을 다시 써서 고친 내용을 지워 버리기 때문이다.
+  등록은 사용자가 앱을 완전히 끈 뒤 등록하기.bat 을 직접 실행해서 한다.
+- 등록하기.bat 과 07_register.py 를 네가 실행하지 마라. 실행은 사용자가 한다.
 
 ## 절대 규칙
 - 파이썬 표준 라이브러리만 쓴다(json, os, sys, re, urllib, time, html, tkinter, xml).
