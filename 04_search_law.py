@@ -7,9 +7,12 @@
 #    page (display=100), pull exact-name matches to the top, and
 #    show people only the head of the list.
 #
-# 2) Results mix in non-current ("연혁") versions. Quote one as
-#    current law and you have an accident. So: warn on anything
-#    whose 현행연혁코드 is not "현행".
+# 2) Every row carries 현행연혁코드 — which version of the statute this is.
+#    target=law returns only 현행 (measured: 56/56 for "상법"), so the
+#    warning below stays silent here. It fires the moment you look at
+#    dated versions (target=eflaw returns 연혁 and 시행예정 rows), and
+#    quoting one of those as current law is a real-world accident.
+#    Print the marker rather than trusting every row to be current.
 # ---------------------------------------------------------------
 import os
 import urllib.parse
