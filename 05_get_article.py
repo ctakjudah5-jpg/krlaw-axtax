@@ -3,10 +3,10 @@
 # 4 digits for the article number + 2 for its branch ("의N").
 #     제38조    -> 0038 + 00 = "003800"
 #     제10조의2 -> 0010 + 02 = "001002"
-# The statute itself is addressed by MST, taken from search (04).
+# The statute itself is addressed by 법령ID, taken from search (04).
 #
-# This file also guards against three quirks of the API that are
-# documented nowhere — one in how the request is sent, two in
+# This file also guards against four quirks of the API that are
+# documented nowhere — two in how the request is sent, two in
 # how the response is read.
 # ---------------------------------------------------------------
 import json
@@ -76,19 +76,41 @@ def _num(x):
     return int(m.group()) if m else 0
 
 
-def get_article(mst, jo):
-    """MST + article number -> the article's text.
+def get_article(law_id, jo):
+    """법령ID + article number -> the article's text.
 
-    Quirk (request side): passing the article number (JO) as an API
+    Quirk (request side #1): passing the article number (JO) as an API
     parameter can silently drop tables attached to the article.
-    So fetch the whole statute and pick the article out locally."""
+    So fetch the whole statute and pick the article out locally.
+
+    Quirk (request side #2): address the statute by 법령ID — never by
+    법령일련번호(MST). Measured 2026-08-29: target=eflaw with MST alone is
+    refused. It answers HTTP 200, so nothing looks broken, but the body is
+    a notice reading "국가법령정보 공동활용 미신청된 목록/본문에 대한
+    접근입니다". The wording blames your API application; your key is fine.
+    With the same key, eflaw+ID / law+MST / law+ID / eflaw+MST+efYd all
+    return the statute in full.
+    Do NOT "fix" this by switching to target=law. That serves the 공포본:
+    for 소득세법 it was six months behind the 시행본 (20260101 vs 20260701),
+    24 articles differed in body text, and 제164조의4 existed only there."""
+    # Callers hand this over from search output ("소득세법 [법령ID 001565] ...").
+    # Keep only the digits, so a stray bracket or the label itself is harmless.
+    law_id = re.sub(r"\D", "", str(law_id)) or str(law_id)
     raw = http_get("https://www.law.go.kr/DRF/lawService.do", {
-        "OC": read_key(), "target": "eflaw", "type": "JSON", "MST": str(mst),
+        "OC": read_key(), "target": "eflaw", "type": "JSON", "ID": law_id,
     })
-    data = json.loads(raw)
+    # Check the refusal BEFORE parsing: that notice is HTML, so json.loads
+    # would raise first and the useful message would never be reached.
+    if "미신청" in raw:
+        return ("[조회 실패] 법령ID %s — 조회 조합이 잘못됐습니다. "
+                "인증키 문제가 아니니 키를 다시 입력하지 마세요." % law_id)
+    try:
+        data = json.loads(raw)
+    except ValueError:
+        return "[조회 실패] 법령ID %s — 응답이 JSON 이 아닙니다." % law_id
     law = data.get("법령")
     if not isinstance(law, dict):
-        return "[조회 실패] MST %s — 법령 전체본을 받지 못했습니다." % mst
+        return "[조회 실패] 법령ID %s — 법령 전체본을 받지 못했습니다." % law_id
 
     jo_node = law.get("조문")
     units = as_list(jo_node.get("조문단위")) if isinstance(jo_node, dict) else as_list(jo_node)
@@ -98,8 +120,8 @@ def get_article(mst, jo):
            and _num(u.get("조문번호")) == want_jo
            and _num(u.get("조문가지번호")) == want_ji]
     if not sel:
-        return ("[조문 없음] %s — 이 법령(MST %s)에 해당 조문이 없습니다. "
-                "폐지되었거나 조문번호가 틀렸을 수 있습니다." % (jo, mst))
+        return ("[조문 없음] %s — 이 법령(법령ID %s)에 해당 조문이 없습니다. "
+                "폐지되었거나 조문번호가 틀렸을 수 있습니다." % (jo, law_id))
 
     out = []
     for u in sel:                          # 조 -> 항 -> 호 -> 목, with indentation
@@ -142,4 +164,4 @@ def get_article(mst, jo):
 if __name__ == "__main__":
     # Check the numbering rule (works without a key).
     print(jo_code("제38조"), jo_code("제10조의2"))   # 003800 001002
-    # The full-text demo needs an MST — get one via search_law in 04.
+    # The full-text demo needs a 법령ID — get one via search_law in 04.

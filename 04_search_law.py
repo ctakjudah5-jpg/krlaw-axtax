@@ -13,6 +13,11 @@
 #    dated versions (target=eflaw returns 연혁 and 시행예정 rows), and
 #    quoting one of those as current law is a real-world accident.
 #    Print the marker rather than trusting every row to be current.
+#
+# 3) Each row carries BOTH 법령ID and 법령일련번호(MST). The detail call in 05
+#    needs 법령ID. Measured 2026-08-29: lawService.do refuses target=eflaw
+#    when given MST alone — HTTP 200, but the body is a "미신청" notice that
+#    reads like an API-application problem. So surface 법령ID here.
 # ---------------------------------------------------------------
 import os
 import urllib.parse
@@ -70,12 +75,12 @@ def search_law(keyword):
     lines = []
     for d in ordered[:15]:                # show only the head of the list
         name = d.get("법령명한글", "?")
-        mst = d.get("법령일련번호", "?")   # the key for detail lookups (lawService) = MST
+        lid = d.get("법령ID", "?")        # what the detail call in 05 needs
         stat = d.get("현행연혁코드", "")
         ef = d.get("시행일자", "")
         # Fix for #2: warn on non-current versions.
         mark = "" if stat == "현행" else "  ⚠️ %s — 현행 아님(과거·예정 버전)" % (stat or "상태불명")
-        lines.append("%s [MST %s] 시행 %s%s" % (name, mst, ef, mark))
+        lines.append("%s [법령ID %s] 시행 %s%s" % (name, lid, ef, mark))
     if len(ordered) > 15:
         lines.append("… 외 %d건 — 키워드를 더 좁혀 보세요." % (len(ordered) - 15))
     return "\n".join(lines)
